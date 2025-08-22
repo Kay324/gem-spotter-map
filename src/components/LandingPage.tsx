@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Eye, TreePine, Waves, Mountain, Car, Accessibility } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-scenery.jpg";
 
 const categories = [
@@ -30,10 +31,6 @@ const features = [
 ];
 
 export default function LandingPage() {
-  const handleGetStarted = () => {
-    // This will navigate to the map interface
-    console.log("Navigate to map interface");
-  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -64,23 +61,26 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <Button 
-              variant="hero" 
-              size="xl" 
-              onClick={handleGetStarted}
-              className="w-full sm:w-auto"
-            >
-              <MapPin className="mr-2 h-5 w-5" />
-              Start Exploring
-            </Button>
-            <Button 
-              variant="outline" 
-              size="xl"
-              className="w-full sm:w-auto border-2 border-primary/30 hover:border-primary"
-            >
-              <TreePine className="mr-2 h-5 w-5" />
-              Add a Location
-            </Button>
+            <Link to="/map" className="w-full sm:w-auto">
+              <Button 
+                variant="hero" 
+                size="xl" 
+                className="w-full"
+              >
+                <MapPin className="mr-2 h-5 w-5" />
+                Start Exploring
+              </Button>
+            </Link>
+            <Link to="/map" className="w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                size="xl"
+                className="w-full border-2 border-primary/30 hover:border-primary"
+              >
+                <TreePine className="mr-2 h-5 w-5" />
+                Add a Location
+              </Button>
+            </Link>
           </div>
 
           {/* Category Pills */}
@@ -140,15 +140,16 @@ export default function LandingPage() {
           <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
             Join our community of explorers and help others discover the extraordinary places that make our region special.
           </p>
-          <Button 
-            variant="secondary" 
-            size="xl" 
-            onClick={handleGetStarted}
-            className="shadow-glow hover-lift font-semibold"
-          >
-            <Car className="mr-2 h-5 w-5" />
-            Open Interactive Map
-          </Button>
+          <Link to="/map">
+            <Button 
+              variant="secondary" 
+              size="xl" 
+              className="shadow-glow hover-lift font-semibold"
+            >
+              <Car className="mr-2 h-5 w-5" />
+              Open Interactive Map
+            </Button>
+          </Link>
         </div>
       </section>
     </div>
