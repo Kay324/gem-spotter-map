@@ -219,7 +219,7 @@ const Map: React.FC = () => {
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[1001]">
                       <SelectItem value="City lights">City Lights</SelectItem>
                       <SelectItem value="Water Bodies">Water Bodies</SelectItem>
                       <SelectItem value="Nature">Nature</SelectItem>
