@@ -12,6 +12,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 
+// API Configuration
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+
+// Types
+type Geometry = { type: string; coordinates: any };
+type Spot = {
+  id: number;
+  name: string;
+  description: string;
+  views: string;
+  ada: string | null;
+  parking: number;
+  distance: number;
+  geometry: Geometry;
+  created_at?: string;
+};
+
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -34,8 +51,10 @@ const Map: React.FC = () => {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const drawnItemsRef = useRef<L.FeatureGroup | null>(null);
   const currentLayerRef = useRef<L.Layer | null>(null);
+  const persistentLayerRef = useRef<L.GeoJSON | null>(null);
   
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     description: '',
     name: '',
@@ -46,6 +65,57 @@ const Map: React.FC = () => {
   });
 
   const { toast } = useToast();
+
+  // Load existing spots from API
+  const loadExistingSpots = async (map: L.Map) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/spots`);
+      const { items }: { items: Spot[] } = await res.json();
+
+      if (!Array.isArray(items)) return;
+
+      const fc = {
+        type: 'FeatureCollection',
+        features: items.map(it => ({ 
+          type: 'Feature', 
+          geometry: it.geometry, 
+          properties: it 
+        }))
+      };
+
+      const layer = L.geoJSON(fc as any, {
+        onEachFeature: (feat: any, lyr: L.Layer) => {
+          const p = feat.properties as Spot;
+          (lyr as L.Layer & { bindPopup: Function }).bindPopup(
+            `<b>${p.description || 'Untitled spot'}</b><br>
+             By: ${p.name || 'Anonymous'}<br>
+             Category: ${p.views || '—'}<br>
+             ADA: ${p.ada || '—'}<br>
+             Parking: ${p.parking ?? '—'}<br>
+             Distance (mi): ${p.distance ?? '—'}<br>
+             <small>ID: ${p.id}</small>`
+          );
+        }
+      }).addTo(map);
+
+      persistentLayerRef.current = layer;
+
+      // Fit bounds to show all spots if any exist
+      if (items.length > 0) {
+        try { 
+          map.fitBounds((layer as any).getBounds(), { maxZoom: 14, padding: [20, 20] }); 
+        } catch (e) {
+          // Ignore bounds errors
+        }
+      }
+    } catch (e) {
+      toast({
+        title: "Failed to load spots",
+        description: "Could not load existing scenic spots from the server.",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -112,12 +182,15 @@ const Map: React.FC = () => {
     mapInstanceRef.current = map;
     drawnItemsRef.current = drawnItems;
 
+    // Load existing spots from the API
+    loadExistingSpots(map);
+
     return () => {
       map.remove();
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!currentLayerRef.current || !drawnItemsRef.current) return;
@@ -132,36 +205,70 @@ const Map: React.FC = () => {
       return;
     }
 
-    // Get GeoJSON for the drawn layer
-    const geoJson = (currentLayerRef.current as any).toGeoJSON();
-    
-    // Log the data (as per original functionality)
-    console.log("Name:", formData.name);
-    console.log("Description:", formData.description);
-    console.log("Views:", formData.views);
-    console.log("ADA Accessibility:", formData.adaAccessibility);
-    console.log("Parking Availability:", formData.parking);
-    console.log("Distance from Main Roads:", formData.distance);
-    console.log("Drawing:", JSON.stringify(geoJson.geometry));
+    setSaving(true);
 
-    // Show success message
-    toast({
-      title: "Location Added!",
-      description: "Your scenic spot has been submitted successfully.",
-    });
+    try {
+      const layer = currentLayerRef.current;
+      const payload = {
+        description: formData.description.trim(),
+        name: formData.name.trim(),
+        views: formData.views,
+        ada: formData.adaAccessibility || null,
+        parking: Number.isFinite(+formData.parking) ? +formData.parking : 0,
+        distance: Number.isFinite(+formData.distance) ? +formData.distance : 0,
+        geometry: (layer as any).toGeoJSON().geometry
+      };
 
-    // Reset form and clear drawn items
-    setFormData({
-      description: '',
-      name: '',
-      views: '',
-      adaAccessibility: '',
-      parking: '',
-      distance: ''
-    });
-    setShowForm(false);
-    drawnItemsRef.current?.clearLayers();
-    currentLayerRef.current = null;
+      const res = await fetch(`${API_BASE}/api/spots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.id) {
+        throw new Error(data?.error || `Save failed (${res.status})`);
+      }
+
+      // Success: bind popup and show it immediately
+      (layer as any).bindPopup(
+        `<b>${payload.description || 'Untitled spot'}</b><br>
+         By: ${payload.name || 'Anonymous'}<br>
+         Category: ${payload.views}<br>
+         ADA: ${payload.ada || '—'}<br>
+         Parking: ${payload.parking}<br>
+         Distance (mi): ${payload.distance}<br>
+         <small>Saved as ID ${data.id}</small>`
+      ).openPopup();
+
+      // Show success message
+      toast({
+        title: "Location Saved!",
+        description: "Your scenic spot has been saved successfully.",
+      });
+
+      // Reset form and clear drawn items from the draw control
+      setFormData({
+        description: '',
+        name: '',
+        views: '',
+        adaAccessibility: '',
+        parking: '',
+        distance: ''
+      });
+      setShowForm(false);
+      drawnItemsRef.current?.clearLayers();
+      currentLayerRef.current = null;
+
+    } catch (err: any) {
+      toast({
+        title: "Save Failed",
+        description: err.message || 'Network error saving spot',
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -274,10 +381,10 @@ const Map: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1">
-                    Submit
+                  <Button type="submit" className="flex-1" disabled={saving}>
+                    {saving ? 'Saving...' : 'Submit'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={handleCancel} className="flex-1">
+                  <Button type="button" variant="outline" onClick={handleCancel} className="flex-1" disabled={saving}>
                     Cancel
                   </Button>
                 </div>
