@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import React, { useState } from 'react';
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
@@ -22,6 +23,9 @@ type Spot = {
   name: string;
   description: string;
   views: string;
+  photo: null,
+  review: '',
+  rating: 0,
   ada: string | null;
   parking: number;
   distance: number;
