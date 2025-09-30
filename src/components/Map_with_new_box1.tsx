@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-
+import React, { useState } from 'react';
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
@@ -23,6 +23,9 @@ type Spot = {
   name: string;
   description: string;
   views: string;
+  photo: null,
+  review: '',
+  rating: 0,
   ada: string | null;
   parking: number;
   distance: number;
@@ -287,115 +290,174 @@ const Map: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen">
-      <div ref={mapRef} className="w-full h-full" />
-      
-      {/* Form Modal */}
-      {showForm && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto shadow-card">
-            <CardHeader>
-              <CardTitle className="font-display text-xl">Add Scenic Location</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="description">Description *</Label>
-                  <Input
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe this scenic spot"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="name">Your Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter your name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="views">Category *</Label>
-                  <Select value={formData.views} onValueChange={(value) => setFormData({ ...formData, views: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[1001]">
-                      <SelectItem value="City lights">City Lights</SelectItem>
-                      <SelectItem value="Water Bodies">Water Bodies</SelectItem>
-                      <SelectItem value="Nature">Nature</SelectItem>
-                      <SelectItem value="Hikes">Hikes</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>ADA Accessibility *</Label>
-                  <RadioGroup 
-                    value={formData.adaAccessibility} 
-                    onValueChange={(value) => setFormData({ ...formData, adaAccessibility: value })}
-                    className="mt-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Accessible" id="accessible" />
-                      <Label htmlFor="accessible">Accessible</Label>
+     <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg bg-white rounded-2xl">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-2xl font-bold text-gray-800">Add Location Details</CardTitle>
+                      <button onClick={onClose} className="text-gray-400 hover:text-gray-600">&times;</button>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Not Accessible" id="not-accessible" />
-                      <Label htmlFor="not-accessible">Not Accessible</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Description Field */}
+                        <div>
+                            <Label htmlFor="description">Description *</Label>
+                            <Input
+                                id="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                placeholder="Describe this scenic spot"
+                                required
+                            />
+                        </div>
 
-                <div>
-                  <Label htmlFor="parking">Parking Availability</Label>
-                  <Input
-                    id="parking"
-                    value={formData.parking}
-                    onChange={(e) => setFormData({ ...formData, parking: e.target.value })}
-                    placeholder="Enter number of available parking spots"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Enter the number of available parking spots. If no parking, enter 0.
-                  </p>
-                </div>
+                        {/* User's Name Field */}
+                        <div>
+                            <Label htmlFor="name">Your Name *</Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                placeholder="Enter your name"
+                                required
+                            />
+                        </div>
 
-                <div>
-                  <Label htmlFor="distance">Distance from Main Roads</Label>
-                  <Input
-                    id="distance"
-                    value={formData.distance}
-                    onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
-                    placeholder="Enter distance in miles"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Distance in miles from the nearest main road.
-                  </p>
-                </div>
+                        {/* Views Dropdown */}
+                        <div>
+                            <Label htmlFor="views">Category *</Label>
+                            {/* This is a simplified version of a Select component */}
+                            <select
+                                id="views"
+                                value={formData.views}
+                                onChange={(e) => setFormData({ ...formData, views: e.target.value })}
+                                className="mt-1 flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                required
+                            >
+                                <option value="" disabled>Select a category</option>
+                                <option value="City lights">City Lights</option>
+                                <option value="Water Bodies">Water Bodies</option>
+                                <option value="Nature">Nature</option>
+                                <option value="Hikes">Hikes</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        {/* Photo Upload Field - NEWLY ADDED */}
+                        <div>
+                            <Label htmlFor="photo">Add a Photo</Label>
+                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                                <div className="space-y-1 text-center">
+                                    {/* Shows a preview of the image if one is selected */}
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Preview" className="h-24 mx-auto rounded-md mb-4"/>
+                                    ) : (
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    )}
+                                    <div className="flex text-sm text-gray-600 justify-center">
+                                        <Label htmlFor="photo-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                            <span>Upload a file</span>
+                                            <Input id="photo-upload" name="photo-upload" type="file" className="sr-only" onChange={handlePhotoChange} accept="image/*"/>
+                                        </Label>
+                                    </div>
+                                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1" disabled={saving}>
-                    {saving ? 'Saving...' : 'Submit'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={handleCancel} className="flex-1" disabled={saving}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                        {/* Review Field - NEWLY ADDED */}
+                        <div>
+                            <Label htmlFor="review">Your Review</Label>
+                            <Textarea
+                                id="review"
+                                value={formData.review}
+                                onChange={handleChange}
+                                placeholder="Share your experience..."
+                                rows="4"
+                            />
+                        </div>
+
+                        {/* Star Rating - NEWLY ADDED */}
+                        <div>
+                            <Label>Rating *</Label>
+                            <div className="flex items-center mt-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <StarIcon
+                                        key={star}
+                                        className={`cursor-pointer h-8 w-8 ${
+                                            (hoverRating || formData.rating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                                        }`}
+                                        onClick={() => setFormData({ ...formData, rating: star })}
+                                        onMouseEnter={() => setHoverRating(star)}
+                                        onMouseLeave={() => setHoverRating(0)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ADA Accessibility */}
+                        <div>
+                            <Label>ADA Accessibility *</Label>
+                            <RadioGroup
+                                value={formData.adaAccessibility}
+                                onValueChange={(value) => setFormData({ ...formData, adaAccessibility: value })}
+                                className="mt-2 space-y-2"
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Accessible" id="accessible" name="ada" />
+                                    <Label htmlFor="accessible">Accessible</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Not Accessible" id="not-accessible" name="ada" />
+                                    <Label htmlFor="not-accessible">Not Accessible</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                        
+                        {/* Parking Availability */}
+                        <div>
+                            <Label htmlFor="parking">Parking Availability</Label>
+                            <Input
+                                id="parking"
+                                type="number"
+                                value={formData.parking}
+                                onChange={handleChange}
+                                placeholder="e.g., 10"
+                            />
+                             <p className="text-sm text-gray-500 mt-1">
+                                Enter the number of spots. If no parking, enter 0.
+                            </p>
+                        </div>
+                        
+                        {/* Distance From Main Roads */}
+                        <div>
+                            <Label htmlFor="distance">Distance from Main Roads (miles)</Label>
+                            <Input
+                                id="distance"
+                                type="number"
+                                step="0.1"
+                                value={formData.distance}
+                                onChange={handleChange}
+                                placeholder="e.g., 1.5"
+                            />
+                             <p className="text-sm text-gray-500 mt-1">
+                                Distance in miles from the nearest main road.
+                            </p>
+                        </div>
+
+                        {/* Submit Button */}
+                        <Button type="submit" className="w-full bg-blue-600 text-white">
+                           Submit
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
-      )}
-    </div>
-  );
-};
+    );
+}
+
 
 export default Map;
