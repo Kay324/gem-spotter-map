@@ -4,13 +4,21 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 // @ts-ignore - leaflet-draw types are incomplete
 import 'leaflet-draw';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useToast } from '@/hooks/use-toast';
+const Card = ({ className, children }) => <div className={className}>{children}</div>;
+const CardHeader = ({ children }) => <div className="p-6 pb-0">{children}</div>;
+const CardTitle = ({ className, children }) => <h3 className={`${className} font-semibold leading-none tracking-tight`}>{children}</h3>;
+const CardContent = ({ children }) => <div className="p-6 pt-0">{children}</div>;
+const Label = ({ htmlFor, children }) => <label htmlFor={htmlFor} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{children}</label>;
+const Input = (props) => <input {...props} className={`${props.className} flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`} />;
+const Textarea = (props) => <textarea {...props} className={`${props.className} flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`} />;
+const Select = ({ children }) => <div>{children}</div>;
+const SelectTrigger = ({ children }) => <button className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{children}</button>;
+const SelectValue = ({ placeholder }) => <span>{placeholder}</span>;
+const SelectContent = ({ children, className }) => <div className={`${className} relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md`}>{children}</div>;
+const SelectItem = ({ value, children }) => <div data-value={value} className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">{children}</div>;
+const RadioGroup = ({ children, className }) => <div className={className}>{children}</div>;
+const RadioGroupItem = (props) => <input type="radio" {...props} />;
+const Button = ({ children, className, ...props }) => <button {...props} className={`${className} inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2`}>{children}</button>
 import React, { useState } from 'react';
 
 // API Configuration
@@ -45,6 +53,9 @@ interface FormData {
   description: string;
   name: string;
   views: string;
+  photo: null,
+  review: string,
+  rating: int,
   adaAccessibility: string;
   parking: string;
   distance: string;
@@ -63,11 +74,44 @@ const Map: React.FC = () => {
     description: '',
     name: '',
     views: '',
+    photo: null,
+    review: '',
+    rating: 0,
     adaAccessibility: '',
     parking: '',
     distance: ''
   });
 
+ // State for the image preview URL
+    const [imagePreview, setImagePreview] = useState('');
+
+    // State to manage hover effect on stars
+    const [hoverRating, setHoverRating] = useState(0);
+
+    // This function handles changes for all standard inputs
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setFormData({ ...formData, [id]: value });
+    };
+
+    // This function specifically handles the file input change
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFormData({ ...formData, photo: file });
+            // Create a URL for the image to show a preview
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+    
+    // Function to handle form submission
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // In a real app, you would upload the photo and submit the formData
+        console.log('Form data to submit:', formData);
+        onClose(); // Close the modal after submission
+    };
+  
   const { toast } = useToast();
 
   // Load existing spots from API
@@ -218,6 +262,9 @@ const Map: React.FC = () => {
         name: formData.name.trim(),
         views: formData.views,
         ada: formData.adaAccessibility || null,
+        photo: null,
+        review: '',
+        rating: 0,
         parking: Number.isFinite(+formData.parking) ? +formData.parking : 0,
         distance: Number.isFinite(+formData.distance) ? +formData.distance : 0,
         geometry: (layer as any).toGeoJSON().geometry
@@ -256,6 +303,9 @@ const Map: React.FC = () => {
         description: '',
         name: '',
         views: '',
+        photo: null,
+        review: '',
+        rating: 0,
         adaAccessibility: '',
         parking: '',
         distance: ''
@@ -283,6 +333,9 @@ const Map: React.FC = () => {
       description: '',
       name: '',
       views: '',
+      photo: ,
+      review: '',
+      rating: 0,
       adaAccessibility: '',
       parking: '',
       distance: ''
@@ -290,7 +343,8 @@ const Map: React.FC = () => {
   };
 
   return (
-     <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+   // Form Modal
+        <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
             <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg bg-white rounded-2xl">
                 <CardHeader>
                     <div className="flex justify-between items-center">
